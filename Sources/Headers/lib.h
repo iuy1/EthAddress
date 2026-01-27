@@ -1,4 +1,5 @@
-#ifdef __STDC__
+#ifdef __METAL_VERSION__
+#else
 #include <stdint.h>
 #endif
 
