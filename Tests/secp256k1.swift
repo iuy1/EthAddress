@@ -24,6 +24,11 @@ struct secp256k1 {
       let v = try #require(str2uint256(s))
       #expect(v.n.0 == 0xabab_abab)
     }
+    do {
+      let s = String(repeating: "c", count: 63) + "d"
+      let v = try #require(str2uint256(s))
+      #expect(uint2562str(v) == s)
+    }
   }
   @Test
   func uint256_to_fe() {
@@ -36,7 +41,7 @@ struct secp256k1 {
       let uint256_to_fe = MetalResource.library.makeFunction(name: "uint256_to_fe")!
       let piplineState = try! MetalResource.device.makeComputePipelineState(
         function: uint256_to_fe)
-    let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
+      let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
       let encoder = commandBuffer.makeComputeCommandEncoder()!
       encoder.setComputePipelineState(piplineState)
       encoder.setBuffer(buffer1, offset: 0, index: 1)
@@ -53,7 +58,7 @@ struct secp256k1 {
       let fe_to_uint256 = MetalResource.library.makeFunction(name: "fe_to_uint256")!
       let piplineState = try! MetalResource.device.makeComputePipelineState(
         function: fe_to_uint256)
-    let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
+      let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
       let encoder = commandBuffer.makeComputeCommandEncoder()!
       encoder.setComputePipelineState(piplineState)
       encoder.setBuffer(buffer2, offset: 0, index: 1)

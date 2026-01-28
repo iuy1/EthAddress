@@ -29,8 +29,24 @@ public func uint2562str(_ v: uint256) -> String {
       arr[i] = ptr.loadUnaligned(fromByteOffset: i * MemoryLayout<UInt32>.stride, as: UInt32.self)
     }
   }
+  arr.reverse()
   return arr.map {
     chunk in
     String(format: "%08x", chunk)
   }.joined()
+}
+
+public func str2pubkey(_ s: String) -> pubkey? {
+  let s = s.filter { !$0.isWhitespace }
+  if s.count != 128 {
+    return nil
+  }
+  let mid = s.index(s.startIndex, offsetBy: 64)
+  guard let x = str2uint256(String(s[..<mid])) else {
+    return nil
+  }
+  guard let y = str2uint256(String(s[mid...])) else {
+    return nil
+  }
+  return pubkey(x: x, y: y)
 }
