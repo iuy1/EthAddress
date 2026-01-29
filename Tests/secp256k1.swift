@@ -44,8 +44,8 @@ struct secp256k1 {
       let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
       let encoder = commandBuffer.makeComputeCommandEncoder()!
       encoder.setComputePipelineState(piplineState)
-      encoder.setBuffer(buffer1, offset: 0, index: 1)
-      encoder.setBuffer(buffer2, offset: 0, index: 0)
+      encoder.setBuffer(buffer1, offset: 0, index: 0)
+      encoder.setBuffer(buffer2, offset: 0, index: 1)
       encoder.dispatchThreads(threads, threadsPerThreadgroup: threads)
       encoder.endEncoding()
       commandBuffer.commit()
@@ -61,14 +61,14 @@ struct secp256k1 {
       let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
       let encoder = commandBuffer.makeComputeCommandEncoder()!
       encoder.setComputePipelineState(piplineState)
-      encoder.setBuffer(buffer2, offset: 0, index: 1)
-      encoder.setBuffer(buffer3, offset: 0, index: 0)
+      encoder.setBuffer(buffer2, offset: 0, index: 0)
+      encoder.setBuffer(buffer3, offset: 0, index: 1)
       encoder.dispatchThreads(threads, threadsPerThreadgroup: threads)
       encoder.endEncoding()
       commandBuffer.commit()
       commandBuffer.waitUntilCompleted()
     }
-    let out = buffer3.contents().load(as: uint256.self)
+    let out = buffer3.contents().loadUnaligned(as: uint256.self)
     #expect(uint2562str(u) == uint2562str(out), "out = \(uint2562str(out))")
   }
 }

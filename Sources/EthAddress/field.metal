@@ -1,39 +1,52 @@
 #include "../Headers/lib.h"
+#include <metal_stdlib>
 
-field_elem uint256_to_fe(uint256 v) {
-  field_elem res;
-  res.n[0] = v.n[0] & 0x03ff'ffff;
-  res.n[1] = (v.n[0] >> 26) | (v.n[1] << 6 & 0x03ff'ffff);
-  res.n[2] = (v.n[1] >> 20) | (v.n[2] << 12 & 0x03ff'ffff);
-  res.n[3] = (v.n[2] >> 14) | (v.n[3] << 18 & 0x03ff'ffff);
-  res.n[4] = (v.n[3] >> 8) | (v.n[4] << 24 & 0x03ff'ffff);
-  res.n[5] = (v.n[4] >> 2) & 0x03ff'ffff;
-  res.n[6] = (v.n[4] >> 28) | (v.n[5] << 4 & 0x03ff'ffff);
-  res.n[7] = (v.n[5] >> 22) | (v.n[6] << 10 & 0x03ff'ffff);
-  res.n[8] = (v.n[6] >> 16) | (v.n[7] << 16 & 0x03ff'ffff);
-  res.n[9] = v.n[7] >> 10;
-  return res;
+template <uint aLen, uint aBits, uint bLen, uint bBits>
+void transform(thread const uint a[], thread uint b[]) {
+  for (uint i = 0; i < bLen; ++i) {
+    b[i] = 0;
+  }
+  for (uint i = 0; i < aLen; ++i) {
+    for (uint j = 0; j < bLen; ++j) {
+      uint aStart = i * aBits;
+      uint aEnd = aStart + aBits;
+      uint bStart = j * bBits;
+      uint bEnd = bStart + bBits;
+      uint overlapStart = metal::max(aStart, bStart);
+      uint overlapEnd = metal::min(aEnd, bEnd);
+      if (overlapStart < overlapEnd) {
+        uint overlapBits = overlapEnd - overlapStart;
+        /*
+          T extract_bits(T x, uint offset, uint bits)
+          For unsigned data types, the most significant
+          bits of the result are set to zero. For signed data
+          types, the most significant bits are set to the
+          value of bit offset+bits-1.
+        */
+        // it seems that the most significant bit are not set to zero
+        uint e = metal::extract_bits(a[i], overlapStart - aStart, overlapBits);
+        b[j] = metal::insert_bits(b[j], e, overlapStart - bStart, overlapBits);
+      }
+    }
+  }
 }
 
-kernel void uint256_to_fe(device field_elem *out [[buffer(0)]],
-                          device const uint256 *in [[buffer(1)]]) {
-  *out = uint256_to_fe(*in);
+kernel void uint256_to_fe(device const uint256 *in [[buffer(0)]],
+                          device field_elem *out [[buffer(1)]]) {
+  auto a = *in;
+  field_elem b;
+  transform<8, 32, 10, 26>(a.n, b.n);
+  *out = b;
 }
 
-uint256 fe_to_uint256(field_elem v) {
-  uint256 res;
-  res.n[0] = v.n[0] | (v.n[1] << 26);
-  res.n[1] = (v.n[1] >> 6) | (v.n[2] << 20);
-  res.n[2] = (v.n[2] >> 12) | (v.n[3] << 14);
-  res.n[3] = (v.n[3] >> 18) | (v.n[4] << 8);
-  res.n[4] = (v.n[4] >> 24) | (v.n[5] << 2) | (v.n[6] << 28);
-  res.n[5] = (v.n[6] >> 4) | (v.n[7] << 22);
-  res.n[6] = (v.n[7] >> 10) | (v.n[8] << 16);
-  res.n[7] = (v.n[8] >> 16) | (v.n[9] << 10);
-  return res;
+kernel void fe_to_uint256(device const field_elem *in [[buffer(0)]],
+                          device uint256 *out [[buffer(1)]]) {
+  auto a = *in;
+  uint256 b;
+  transform<10, 26, 8, 32>(a.n, b.n);
+  *out = b;
 }
 
-kernel void fe_to_uint256(device uint256 *out [[buffer(0)]],
-                          device const field_elem *in [[buffer(1)]]) {
-  *out = fe_to_uint256(*in);
-}
+constant uint256 mod_uint256 =                             //
+    {.n = {0xfffffc2f, 0xfffffffe, 0xffffffff, 0xffffffff, //
+           0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff}};
