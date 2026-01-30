@@ -14,23 +14,7 @@ struct keccak {
         483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8
         """
       ))
-    let bufferIn = MetalResource.device.makeBuffer(
-      bytes: [pk], length: MemoryLayout<pubkey>.stride)!
-    let bufferOut = MetalResource.device.makeBuffer(length: MemoryLayout<uint256>.stride)!
-    let keccak = MetalResource.library.makeFunction(name: "keccak")!
-    let piplineState = try! MetalResource.device.makeComputePipelineState(
-      function: keccak)
-    let threads = MTLSize(width: 1, height: 1, depth: 1)
-    let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
-    let encoder = commandBuffer.makeComputeCommandEncoder()!
-    encoder.setComputePipelineState(piplineState)
-    encoder.setBuffer(bufferIn, offset: 0, index: 0)
-    encoder.setBuffer(bufferOut, offset: 0, index: 1)
-    encoder.dispatchThreads(threads, threadsPerThreadgroup: threads)
-    encoder.endEncoding()
-    commandBuffer.commit()
-    commandBuffer.waitUntilCompleted()
-    let result = bufferOut.contents().load(as: uint256.self)
+    let result = try compute(name: "keccak", input: pk, output: uint256.self)
     let result_s = uint2562str(result)
     let big_Endian = stride(from: 0, to: 64, by: 2).map { i in
       let start = result_s.index(result_s.startIndex, offsetBy: i)

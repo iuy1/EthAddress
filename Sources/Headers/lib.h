@@ -7,16 +7,17 @@ typedef struct {
   uint32_t n[8];
 } uint256;
 
+// currently unused
 typedef struct {
   // A field element f represents the sum(i=0..9, f.n[i] << (i*26)) mod p,
   // where p is the field modulus, 2^256 - 2^32 - 977.
   uint32_t n[10];
-} field_elem;
+} unsigned10x26;
 
 typedef struct {
   // can not represent point at infinity
-  field_elem x;
-  field_elem y;
+  uint256 x;
+  uint256 y;
 } group_elem;
 
 typedef struct {

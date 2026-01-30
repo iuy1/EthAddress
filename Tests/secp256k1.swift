@@ -31,44 +31,26 @@ struct secp256k1 {
     }
   }
   @Test
-  func uint256_to_fe() {
+  func uint256_to_unsigned10x26() throws {
     let u = str2uint256(String(repeating: "9a", count: 32))!
-    let threads = MTLSize(width: 1, height: 1, depth: 1)
-    let buffer1 = MetalResource.device.makeBuffer(bytes: [u], length: MemoryLayout<uint256>.stride)!
-    let buffer2 = MetalResource.device.makeBuffer(length: MemoryLayout<field_elem>.stride)!
-    let buffer3 = MetalResource.device.makeBuffer(length: MemoryLayout<uint256>.stride)!
+    let i = try compute(name: "uint256_to_unsigned10x26", input: u, output: unsigned10x26.self)
+    #expect(i.n.0 == 0x029a_9a9a, "i.n.0 = \(String(format: "%08x", i.n.0))")
+    #expect(i.n.1 == 0x02a6_a6a6, "i.n.1 = \(String(format: "%08x", i.n.1))")
+    let o = try compute(name: "unsigned10x26_to_uint256", input: i, output: uint256.self)
+    #expect(uint2562str(u) == uint2562str(o), "o = \(uint2562str(o))")
+  }
+  @Test
+  func uint256_arithmetic() throws {
     do {
-      let uint256_to_fe = MetalResource.library.makeFunction(name: "uint256_to_fe")!
-      let piplineState = try! MetalResource.device.makeComputePipelineState(
-        function: uint256_to_fe)
-      let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
-      let encoder = commandBuffer.makeComputeCommandEncoder()!
-      encoder.setComputePipelineState(piplineState)
-      encoder.setBuffer(buffer1, offset: 0, index: 0)
-      encoder.setBuffer(buffer2, offset: 0, index: 1)
-      encoder.dispatchThreads(threads, threadsPerThreadgroup: threads)
-      encoder.endEncoding()
-      commandBuffer.commit()
-      commandBuffer.waitUntilCompleted()
+      let a = str2uint256("8" + String(repeating: "0", count: 63))!
+      let o = try compute(name: "mod_add", input1: a, input2: a, output: uint256.self)
+      #expect(uint2562str(o) == String(repeating: "0", count: 48) + "00000001" + "000003d1")
     }
-    let fe = buffer2.contents().load(as: field_elem.self)
-    #expect(fe.n.0 == 0x029a_9a9a, "fe.n.0 = \(String(format: "%08x", fe.n.0))")
-    #expect(fe.n.1 == 0x02a6_a6a6, "fe.n.1 = \(String(format: "%08x", fe.n.1))")
     do {
-      let fe_to_uint256 = MetalResource.library.makeFunction(name: "fe_to_uint256")!
-      let piplineState = try! MetalResource.device.makeComputePipelineState(
-        function: fe_to_uint256)
-      let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
-      let encoder = commandBuffer.makeComputeCommandEncoder()!
-      encoder.setComputePipelineState(piplineState)
-      encoder.setBuffer(buffer2, offset: 0, index: 0)
-      encoder.setBuffer(buffer3, offset: 0, index: 1)
-      encoder.dispatchThreads(threads, threadsPerThreadgroup: threads)
-      encoder.endEncoding()
-      commandBuffer.commit()
-      commandBuffer.waitUntilCompleted()
+      let a = str2uint256("8" + String(repeating: "0", count: 63))!
+      let b = str2uint256("7" + String(repeating: "f", count: 63))!
+      let o = try compute(name: "mod_sub", input1: a, input2: b, output: uint256.self)
+      #expect(uint2562str(o) == String(repeating: "0", count: 63) + "1")
     }
-    let out = buffer3.contents().loadUnaligned(as: uint256.self)
-    #expect(uint2562str(u) == uint2562str(out), "out = \(uint2562str(out))")
   }
 }
