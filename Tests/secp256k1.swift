@@ -47,10 +47,34 @@ struct secp256k1 {
       #expect(uint2562str(o) == String(repeating: "0", count: 48) + "00000001" + "000003d1")
     }
     do {
+      let a = str2uint256(String(repeating: "12345678", count: 8))!
+      let n = try compute(name: "mod_neg", input: a, output: uint256.self)
+      let a_ = try compute(name: "mod_neg", input: n, output: uint256.self)
+      #expect(uint2562str(a) == uint2562str(a_))
+    }
+    do {
       let a = str2uint256("8" + String(repeating: "0", count: 63))!
       let b = str2uint256("7" + String(repeating: "f", count: 63))!
       let o = try compute(name: "mod_sub", input1: a, input2: b, output: uint256.self)
       #expect(uint2562str(o) == String(repeating: "0", count: 63) + "1")
+    }
+    do {
+      let a = str2uint256(String(repeating: "00000000", count: 7) + "20000000")!
+      let o = try compute(name: "mod_mul", input1: a, input2: a, output: uint256.self)
+      #expect(uint2562str(o) == String(repeating: "00000000", count: 6) + "04000000" + "00000000")
+    }
+    do {
+      let a = str2uint256(String(repeating: "12345678", count: 8))!
+      let n = try compute(name: "mod_neg", input: a, output: uint256.self)
+      let o = try compute(name: "mod_mul", input1: a, input2: a, output: uint256.self)
+      let o2 = try compute(name: "mod_mul", input1: n, input2: n, output: uint256.self)
+      #expect(uint2562str(o) == uint2562str(o2))
+    }
+    do {
+      let a = str2uint256(String(repeating: "12345678", count: 8))!
+      let i = try compute(name: "mod_inv", input: a, output: uint256.self)
+      let _1 = try compute(name: "mod_mul", input1: a, input2: i, output: uint256.self)
+      // #expect(uint2562str(_1) == String(repeating: "0", count: 63) + "1")
     }
   }
 }

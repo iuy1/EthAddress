@@ -1,8 +1,7 @@
 #include "../Headers/lib.h"
+#include <metal_stdlib>
 
 using state = keccak_state;
-
-ulong rotate_left(ulong x, uint y) { return (x << y) | (x >> (64 - y)); }
 
 uint bswap(uint x) {
   auto c = as_type<uchar4>(x);
@@ -32,7 +31,7 @@ void theta(thread state &s) {
   }
   for (uint r = 0; r < 5; ++r) {
     for (uint c = 0; c < 5; ++c) {
-      s.n[5 * r + c] ^= t[(c + 4) % 5] ^ rotate_left(t[(c + 1) % 5], 1);
+      s.n[5 * r + c] ^= t[(c + 4) % 5] ^ metal::rotate(t[(c + 1) % 5], 1ul);
     }
   }
 }
@@ -47,7 +46,7 @@ void tho_pi(thread state &s) {
   for (uint x = 0; x < 5; ++x) {
     for (uint y = 0; y < 5; ++y) {
       uint z = (2 * x + 3 * y) % 5;
-      s.n[5 * z + y] = rotate_left(t.n[5 * y + x], ROTATION_OFFSETS[y][x]);
+      s.n[5 * z + y] = metal::rotate(t.n[5 * y + x], ROTATION_OFFSETS[y][x]);
     }
   }
 }

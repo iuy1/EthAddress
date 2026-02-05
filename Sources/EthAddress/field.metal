@@ -6,6 +6,7 @@ void transform(thread const uint a[], thread uint b[]) {
   for (uint i = 0; i < bLen; ++i) {
     b[i] = 0;
   }
+  // unfortunately the loop is not unrolled
   for (uint i = 0; i < aLen; ++i) {
     for (uint j = 0; j < bLen; ++j) {
       uint aStart = i * aBits;
@@ -16,14 +17,6 @@ void transform(thread const uint a[], thread uint b[]) {
       uint overlapEnd = metal::min(aEnd, bEnd);
       if (overlapStart < overlapEnd) {
         uint overlapBits = overlapEnd - overlapStart;
-        /*
-          T extract_bits(T x, uint offset, uint bits)
-          For unsigned data types, the most significant
-          bits of the result are set to zero. For signed data
-          types, the most significant bits are set to the
-          value of bit offset+bits-1.
-        */
-        // it seems that the most significant bit are not set to zero
         uint e = metal::extract_bits(a[i], overlapStart - aStart, overlapBits);
         b[j] = metal::insert_bits(b[j], e, overlapStart - bStart, overlapBits);
       }
@@ -32,15 +25,16 @@ void transform(thread const uint a[], thread uint b[]) {
 }
 
 kernel void uint256_to_unsigned10x26(device const uint256 *in [[buffer(0)]],
-                          device unsigned10x26 *out [[buffer(1)]]) {
+                                     device unsigned10x26 *out [[buffer(1)]]) {
   auto a = *in;
   unsigned10x26 b;
   transform<8, 32, 10, 26>(a.n, b.n);
   *out = b;
 }
 
-kernel void unsigned10x26_to_uint256(device const unsigned10x26 *in [[buffer(0)]],
-                          device uint256 *out [[buffer(1)]]) {
+kernel void unsigned10x26_to_uint256(device const unsigned10x26 *in
+                                     [[buffer(0)]],
+                                     device uint256 *out [[buffer(1)]]) {
   auto a = *in;
   uint256 b;
   transform<10, 26, 8, 32>(a.n, b.n);
@@ -83,6 +77,27 @@ kernel void mod_add(device const uint256 *a [[buffer(0)]],
   *out = r;
 }
 
+uint256 mod_neg(uint256 a) {
+  uint256 r;
+  for (uint i = 0; i < 8; ++i) {
+    r.n[i] = ~a.n[i];
+  }
+  // 2**256 - 1 - a + mod + 1
+  uint c = 0;
+  add_carry(r.n[0], c, r.n[0], 0xfffffc30, c);
+  add_carry(r.n[1], c, r.n[1], 0xfffffffe, c);
+  add_carry(r.n[2], c, r.n[2], 0xffffffff, c);
+  add_carry(r.n[3], c, r.n[3], 0xffffffff, c);
+  // assume c is 1 now
+  return r;
+}
+
+kernel void mod_neg(device const uint256 *a [[buffer(0)]],
+                    device uint256 *out [[buffer(1)]]) {
+  auto r = mod_neg(*a);
+  *out = r;
+}
+
 uint256 mod_sub(uint256 a, uint256 b) {
   uint256 r;
   uint c = 0;
@@ -93,12 +108,14 @@ uint256 mod_sub(uint256 a, uint256 b) {
   if (c) {
     add_carry(r.n[0], c, r.n[0], 1, 0);
     add_carry(r.n[1], c, r.n[1], 0, c);
+    add_carry(r.n[2], c, r.n[2], 0, c);
+    // add_carry(r.n[3], c, r.n[3], 0, c);
   } else {
-    add_carry(r.n[0], c, r.n[0], 0x3d1 + 1, 0);
-    add_carry(r.n[1], c, r.n[1], 1, c);
+    add_carry(r.n[0], c, r.n[0], 0xfffffc30, c);
+    add_carry(r.n[1], c, r.n[1], 0xfffffffe, c);
+    add_carry(r.n[2], c, r.n[2], 0xffffffff, c);
+    add_carry(r.n[3], c, r.n[3], 0xffffffff, c);
   }
-  add_carry(r.n[2], c, r.n[2], 0, c);
-  add_carry(r.n[3], c, r.n[3], 0, c);
   return r;
 }
 
@@ -109,7 +126,40 @@ kernel void mod_sub(device const uint256 *a [[buffer(0)]],
   *out = r;
 }
 
-uint256 mod_mul(uint256 a, uint256 b) {}
+uint256 mod_mul(uint256 a, uint256 b) {
+  uint r[16]{};
+  for (uint i = 0; i <= 14; ++i) {
+    for (uint i1 = metal::max(7u, i) - 7; i1 <= metal::min(i, 7u); ++i1) {
+      uint i2 = i - i1;
+      ulong ri = ulong(a.n[i1]) * b.n[i2] + r[i];
+      r[i] = uint(ri);
+      ri = r[i + 1] + (ri >> 32);
+      r[i + 1] = uint(ri);
+      if (i < 14) {
+        r[i + 2] += uint(ri >> 32);
+      } else {
+        // r[16] is always 0
+      }
+    }
+  }
+  ulong c = 0; // carray from last limb, < 2**33
+  for (uint i = 8; i < 16; ++i) {
+    ulong t = ulong(r[i]) * 0x3d1 + r[i - 8] + c;
+    r[i - 8] = uint(t);
+    c = (t >> 32) + r[i];
+  }
+  {
+    ulong t = c * 0x3d1 + r[0];
+    r[0] = uint(t);
+    t = (t >> 32) + c + r[1];
+    r[1] = uint(t);
+    uint co;
+    add_carry(r[2], co, r[2], t >> 32, 0);
+    add_carry(r[3], co, r[3], 0, co);
+    add_carry(r[4], co, r[4], 0, co);
+  }
+  return *(thread uint256 *)r;
+}
 
 kernel void mod_mul(device const uint256 *a [[buffer(0)]],
                     device const uint256 *b [[buffer(1)]],
@@ -122,4 +172,21 @@ struct signed9x30 {
   int n[9];
 };
 
-uint256 mod_inv(uint256 a) {}
+constant signed9x30 mod_signed9x30 = {
+    .n = {-0x3d1, -4, 0, 0, 0, 0, 0, 0, 0x10000}};
+
+uint256 mod_inv(uint256 a) {
+  signed9x30 f = mod_signed9x30;
+  signed9x30 g;
+  transform<8, 32, 9, 30>(a.n, (thread uint *)g.n);
+  
+  uint256 r;
+  transform<9, 30, 8, 32>((thread uint *)g.n, r.n);
+  return r;
+}
+
+kernel void mod_inv(device const uint256 *a [[buffer(0)]],
+                    device uint256 *out [[buffer(1)]]) {
+  auto r = mod_inv(*a);
+  *out = r;
+}
