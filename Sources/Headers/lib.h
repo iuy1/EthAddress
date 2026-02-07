@@ -7,6 +7,11 @@ typedef struct {
   uint32_t n[8];
 } uint256;
 
+uint256 mod_add(uint256 a, uint256 b);
+uint256 mod_sub(uint256 a, uint256 b);
+uint256 mod_mul(uint256 a, uint256 b);
+uint256 mod_inv(uint256 a);
+
 // currently unused
 typedef struct {
   // A field element f represents the sum(i=0..9, f.n[i] << (i*26)) mod p,

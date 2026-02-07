@@ -86,10 +86,28 @@ struct secp256k1 {
       let i = try compute(name: "mod_inv", input: a, output: uint256.self)
       let _1 = try compute(name: "mod_mul", input1: a, input2: i, output: uint256.self)
       // _1 == mod + 1
-      let _i = try compute(name:"mod_mul", input1: _1, input2: i, output: uint256.self)
+      let _i = try compute(name: "mod_mul", input1: _1, input2: i, output: uint256.self)
       #expect(uint2562str(_i) == uint2562str(i))
     }
   }
   @Test
-  func group_add() throws {}
+  func group_add() throws {
+    let a = str2pubkey(  // G
+      """
+      79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798          
+      483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8
+      """
+    )!
+    let b = str2pubkey(  // 2G
+      """
+      c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5
+      1ae168fea63dc339a3c58419466ceaeef7f632653266d0e1236431a950cfe52a
+      """
+    )!
+    let c = try compute(name: "group_add", input1: a, input2: b, output: pubkey.self)
+    #expect(
+      uint2562str(c.x) == "f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9")
+    #expect(
+      uint2562str(c.y) == "388f7b0f632de8140fe337e62a37f3566500a99934c2231b6cb9fd7584b8e672")
+  }
 }
