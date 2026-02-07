@@ -71,10 +71,25 @@ struct secp256k1 {
       #expect(uint2562str(o) == uint2562str(o2))
     }
     do {
+      let a = str2uint256(String(repeating: "00000000", count: 7) + "00000001")!
+      let i = try compute(name: "mod_inv", input: a, output: uint256.self)
+      #expect(uint2562str(i) == uint2562str(a))
+    }
+    do {
+      let a = str2uint256(String(repeating: "00000000", count: 7) + "00000002")!
+      let i = try compute(name: "mod_inv", input: a, output: uint256.self)
+      #expect(
+        uint2562str(i) == "7fffffffffffffffffffffffffffffffffffffffffffffffffffffff7ffffe18")
+    }
+    do {
       let a = str2uint256(String(repeating: "12345678", count: 8))!
       let i = try compute(name: "mod_inv", input: a, output: uint256.self)
       let _1 = try compute(name: "mod_mul", input1: a, input2: i, output: uint256.self)
-      // #expect(uint2562str(_1) == String(repeating: "0", count: 63) + "1")
+      // _1 == mod + 1
+      let _i = try compute(name:"mod_mul", input1: _1, input2: i, output: uint256.self)
+      #expect(uint2562str(_i) == uint2562str(i))
     }
   }
+  @Test
+  func group_add() throws {}
 }

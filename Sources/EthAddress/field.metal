@@ -179,9 +179,113 @@ uint256 mod_inv(uint256 a) {
   signed9x30 f = mod_signed9x30;
   signed9x30 g;
   transform<8, 32, 9, 30>(a.n, (thread uint *)g.n);
-  
+  signed9x30 d = {.n = {0}};
+  signed9x30 e = {.n = {1}};
+  int delta = 1;
+  const int M30 = 0x3fffffff;
+  for (uint i0 = 0; i0 < 20; ++i0) {
+    int4 t = {1, 0, 0, 1};
+    /*
+      [out_f] = 1/2**30 * [x, y] * [in_f]
+      [out_g]             [z, w]   [in_g]
+    */
+    int f0 = f.n[0], g0 = g.n[0]; // f0 is always odd
+    for (uint i = 0; i < 30; ++i) {
+      if (delta > 0 && (g0 & 1)) {
+        delta = 1 - delta;
+        int g_ = (g0 - f0) >> 1;
+        f0 = g0, g0 = g_;
+        int4 t_ = t;
+        t.xy = t_.zw * 2;
+        t.zw = t_.zw - t_.xy;
+      } else if (g0 & 1) {
+        delta += 1;
+        g0 = (g0 + f0) >> 1;
+        t.zw += t.xy;
+        t.xy *= 2;
+      } else {
+        delta += 1;
+        g0 >>= 1;
+        t.xy *= 2;
+      }
+    }
+    { // update f g
+      // the result of the bottom 30 bits is already calculated
+      long cf = f0;
+      long cg = g0;
+      for (uint i = 1; i < 9; ++i) {
+        cf += (long)t.x * f.n[i] + (long)t.y * g.n[i];
+        cg += (long)t.z * f.n[i] + (long)t.w * g.n[i];
+        f.n[i - 1] = cf & M30;
+        g.n[i - 1] = cg & M30;
+        cf >>= 30;
+        cg >>= 30;
+      }
+      f.n[8] = cf;
+      g.n[8] = cg;
+    }
+    // mod_inv30 * mod % 2**30 == 1
+    const uint mod_inv30 = 0x2ddacacf;
+    { // update d e
+      // on input and output, d and e are in range (-2*mod, mod)
+      long cd = (long)t.x * d.n[0] + (long)t.y * e.n[0];
+      long ce = (long)t.z * d.n[0] + (long)t.w * e.n[0];
+      int md = 0, me = 0;
+      if (d.n[8] < 0) {
+        md = t.x + t.y;
+      }
+      if (e.n[8] < 0) {
+        me = t.z + t.w;
+      }
+      md -= (mod_inv30 * cd + md) & M30;
+      me -= (mod_inv30 * ce + me) & M30;
+      cd += (long)md * mod_signed9x30.n[0];
+      ce += (long)me * mod_signed9x30.n[0];
+      cd >>= 30; // the bottom 30 bits are 0
+      ce >>= 30;
+      for (uint i = 1; i < 9; ++i) {
+        cd += (long)t.x * d.n[i] + (long)t.y * e.n[i];
+        ce += (long)t.z * d.n[i] + (long)t.w * e.n[i];
+        cd += (long)md * mod_signed9x30.n[i];
+        ce += (long)me * mod_signed9x30.n[i];
+        d.n[i - 1] = cd & M30;
+        e.n[i - 1] = ce & M30;
+        cd >>= 30;
+        ce >>= 30;
+      }
+      d.n[8] = cd;
+      e.n[8] = ce;
+    }
+  }
+  // f == 1 or -1
+  { // normalize d
+    if (d.n[8] < 0) {
+      for (uint i = 0; i < 9; ++i) {
+        d.n[i] += mod_signed9x30.n[i];
+      }
+    }
+    if (f.n[8] < 0) {
+      for (uint i = 0; i < 9; ++i) {
+        d.n[i] = -d.n[i];
+      }
+    }
+    // skip this propagation
+    // for (uint i = 0; i < 8; ++i) {
+    //   d.n[i + 1] += d.n[i] >> 30;
+    //   d.n[i] &= M30;
+    // }
+    if (d.n[8] < 0) {
+      for (uint i = 0; i < 9; ++i) {
+        d.n[i] += mod_signed9x30.n[i];
+      }
+    }
+    for (uint i = 0; i < 8; ++i) {
+      d.n[i + 1] += d.n[i] >> 30;
+      d.n[i] &= M30;
+    }
+  }
   uint256 r;
-  transform<9, 30, 8, 32>((thread uint *)g.n, r.n);
+  transform<9, 30, 8, 32>((thread uint *)d.n, r.n);
   return r;
 }
 
