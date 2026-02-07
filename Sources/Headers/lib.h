@@ -9,6 +9,7 @@ typedef struct {
 
 uint256 mod_add(uint256 a, uint256 b);
 uint256 mod_sub(uint256 a, uint256 b);
+uint256 mod_mul_u8(uint8_t a, uint256 b);
 uint256 mod_mul(uint256 a, uint256 b);
 uint256 mod_inv(uint256 a);
 

@@ -91,6 +91,20 @@ struct secp256k1 {
     }
   }
   @Test
+  func group_double() throws {
+    let a = str2pubkey(  // G
+      """
+      79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798          
+      483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8
+      """
+    )!
+    let o = try compute(name: "group_double", input: a, output: pubkey.self)
+    #expect(
+      uint2562str(o.x) == "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5")
+    #expect(
+      uint2562str(o.y) == "1ae168fea63dc339a3c58419466ceaeef7f632653266d0e1236431a950cfe52a")
+  }
+  @Test
   func group_add() throws {
     let a = str2pubkey(  // G
       """

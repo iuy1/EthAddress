@@ -126,6 +126,26 @@ kernel void mod_sub(device const uint256 *a [[buffer(0)]],
   *out = r;
 }
 
+uint256 mod_mul_u8(uint8_t a, uint256 b) {
+  uint256 r;
+  ulong c = 0;
+  for (uint i = 0; i < 8; ++i) {
+    c += (ulong)b.n[i] * a;
+    r.n[i] = uint(c);
+    c >>= 32;
+  }
+  ulong d = 0;
+  d = r.n[0] + 0x3d1 * c;
+  r.n[0] = d, d >>= 32;
+  d += r.n[1], d += c;
+  r.n[1] = d, d >>= 32;
+  d += r.n[2];
+  r.n[2] = d, d >>= 32;
+  d += r.n[3];
+  r.n[3] = d, d >>= 32;
+  return r;
+}
+
 uint256 mod_mul(uint256 a, uint256 b) {
   uint r[16]{};
   for (uint i = 0; i <= 14; ++i) {
