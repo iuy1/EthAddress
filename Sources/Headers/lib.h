@@ -26,6 +26,9 @@ typedef struct {
   uint256 y;
 } group_elem;
 
+group_elem group_double(group_elem a);
+group_elem group_add(group_elem a, group_elem b);
+
 typedef struct {
   uint256 x;
   uint256 y;
@@ -36,6 +39,24 @@ typedef union {
   uint32_t i[50];
 } keccak_state;
 
+uint256 keccak(pubkey pk);
+
 typedef struct {
   uint8_t n[20];
 } address;
+
+address last20bytes(uint256 hash);
+
+typedef struct {
+  address addr;
+  uint64_t tweak;
+  int score;
+} result;
+
+typedef struct {
+  group_elem a;
+  uint64_t tweak;
+} tweak_point;
+
+#define steps_per_thread 256
+#define threads_per_grid 4096

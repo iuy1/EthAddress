@@ -50,3 +50,12 @@ public func str2pubkey(_ s: String) -> pubkey? {
   }
   return pubkey(x: x, y: y)
 }
+
+public func address2str(_ a: address) -> String {
+  return withUnsafeBytes(of: a) { ptr in
+    let buffer = ptr.bindMemory(to: UInt8.self)
+    return buffer.map { b in
+      String(format: "%02x", b)
+    }.joined()
+  }
+}
