@@ -9,6 +9,20 @@ kernel void fill_pow(device group_elem *a [[buffer(0)]],
   }
 }
 
+kernel void fill_starts(device tweak_point *start [[buffer((0))]],
+                        device group_elem *gnpow [[buffer(1)]],
+                        uint gid [[thread_position_in_grid]]) {
+  start[gid].a = group_add(start[gid].a, gnpow[gid]);
+  start[gid].tweak += steps_per_thread * (gid + 1);
+}
+
+kernel void forward(device tweak_point *start [[buffer((0))]],
+                    constant group_elem &f [[buffer((1))]],
+                    uint gid [[thread_position_in_grid]]) {
+  start[gid].a = group_add(start[gid].a, f);
+  start[gid].tweak += steps_per_thread * threads_per_grid;
+}
+
 kernel void iterate( //
     constant group_elem *gpow [[buffer(0)]],
     device const tweak_point *start [[buffer(1)]],
