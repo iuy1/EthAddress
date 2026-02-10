@@ -11,11 +11,11 @@ public func compute<I: BitwiseCopyable, O: BitwiseCopyable>(
   let bufferOut = MetalResource.device.makeBuffer(
     length: MemoryLayout<O>.stride)!
   let function = try #require(MetalResource.library.makeFunction(name: name))
-  let piplineState = try! MetalResource.device.makeComputePipelineState(
+  let pipelineState = try! MetalResource.device.makeComputePipelineState(
     function: function)
   let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
   let encoder = commandBuffer.makeComputeCommandEncoder()!
-  encoder.setComputePipelineState(piplineState)
+  encoder.setComputePipelineState(pipelineState)
   encoder.setBytes([input], length: MemoryLayout<I>.stride, index: 0)
   encoder.setBuffer(bufferOut, offset: 0, index: 1)
   encoder.dispatchThreads(singleThread, threadsPerThreadgroup: singleThread)
@@ -32,11 +32,11 @@ public func compute<I1: BitwiseCopyable, I2: BitwiseCopyable, O: BitwiseCopyable
   let bufferOut = MetalResource.device.makeBuffer(
     length: MemoryLayout<O>.stride)!
   let function = try #require(MetalResource.library.makeFunction(name: name))
-  let piplineState = try! MetalResource.device.makeComputePipelineState(
+  let pipelineState = try! MetalResource.device.makeComputePipelineState(
     function: function)
   let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
   let encoder = commandBuffer.makeComputeCommandEncoder()!
-  encoder.setComputePipelineState(piplineState)
+  encoder.setComputePipelineState(pipelineState)
   encoder.setBytes([input1], length: MemoryLayout<I1>.stride, index: 0)
   encoder.setBytes([input2], length: MemoryLayout<I2>.stride, index: 1)
   encoder.setBuffer(bufferOut, offset: 0, index: 2)

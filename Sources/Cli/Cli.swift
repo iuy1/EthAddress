@@ -23,8 +23,10 @@ struct Main: AsyncParsableCommand {
       if zero_bytes {
         score = "zero_bytes"
       }
-      let it = Iterate(score: score, start: unsafeBitCast(pubkey, to: group_elem.self))
       let clock = ContinuousClock()
+      let start = clock.now
+      print("initializing...")
+      let it = Iterate(score: score, start: unsafeBitCast(pubkey, to: group_elem.self))
       while true {
         let elapsed = clock.measure {
           let r = it.compute()
@@ -36,7 +38,8 @@ struct Main: AsyncParsableCommand {
           Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds)
           / 1_000_000_000_000_000_000
         print(
-          "\u{1B}[2K\rspeed: \(Double(steps_per_thread * threads_per_grid) / s / 1000_000) M/s\r",
+          "\u{1B}[2K\rtime: \(start.duration(to: clock.now)) "
+            + "speed: \(Double(steps_per_thread * threads_per_grid) / s / 1000_000) M/s\r",
           terminator: "")
         fflush(stdout)
       }

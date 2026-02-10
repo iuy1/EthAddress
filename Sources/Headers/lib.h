@@ -58,5 +58,5 @@ typedef struct {
   uint64_t tweak;
 } tweak_point;
 
-#define steps_per_thread 256
-#define threads_per_grid 4096
+#define steps_per_thread (1 << 10)
+#define threads_per_grid (1 << 12)

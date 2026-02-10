@@ -26,17 +26,17 @@ struct Search {
       descriptor.computeFunction = iterate
       descriptor.linkedFunctions = MTLLinkedFunctions()
       descriptor.linkedFunctions!.functions = [zero_bytes]
-      let piplineState = try! MetalResource.device.makeComputePipelineState(
+      let pipelineState = try! MetalResource.device.makeComputePipelineState(
         descriptor: descriptor, options: []
       ).0
       let functionTableDesc = MTLVisibleFunctionTableDescriptor()
       functionTableDesc.functionCount = 1
-      let functionTable = piplineState.makeVisibleFunctionTable(descriptor: functionTableDesc)!
-      let functionHandle = piplineState.functionHandle(function: zero_bytes)!
+      let functionTable = pipelineState.makeVisibleFunctionTable(descriptor: functionTableDesc)!
+      let functionHandle = pipelineState.functionHandle(function: zero_bytes)!
       functionTable.setFunction(functionHandle, index: 0)
       let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
       let encoder = commandBuffer.makeComputeCommandEncoder()!
-      encoder.setComputePipelineState(piplineState)
+      encoder.setComputePipelineState(pipelineState)
       encoder.setBuffer(PowTable.gpow, offset: 0, index: 0)
       encoder.setBytes(
         [tweak_point(a: start, tweak: 0)], length: MemoryLayout<tweak_point>.stride, index: 1)

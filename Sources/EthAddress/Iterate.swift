@@ -19,17 +19,17 @@ public class Iterate {
           count: Int(threads_per_grid)),
         length: MemoryLayout<tweak_point>.stride * Int(threads_per_grid))!
       let fill_starts = MetalResource.library.makeFunction(name: "fill_starts")!
-      let piplineState = try! MetalResource.device.makeComputePipelineState(
+      let pipelineState = try! MetalResource.device.makeComputePipelineState(
         function: fill_starts)
       let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
       let encoder = commandBuffer.makeComputeCommandEncoder()!
-      encoder.setComputePipelineState(piplineState)
+      encoder.setComputePipelineState(pipelineState)
       encoder.setBuffer(start_points, offset: 0, index: 0)
       encoder.setBuffer(PowTable.gnpow, offset: 0, index: 1)
       encoder.dispatchThreads(
         threadsPerGrid,
         threadsPerThreadgroup: MTLSize(
-          width: piplineState.maxTotalThreadsPerThreadgroup, height: 1, depth: 1))
+          width: pipelineState.maxTotalThreadsPerThreadgroup, height: 1, depth: 1))
       encoder.endEncoding()
       commandBuffer.commit()
       commandBuffer.waitUntilCompleted()
@@ -49,39 +49,39 @@ public class Iterate {
     }()
     do {
       let scoreFunc = MetalResource.library.makeFunction(name: score)!
-      let piplineDesc = MTLComputePipelineDescriptor()
-      piplineDesc.computeFunction = MetalResource.library.makeFunction(name: "iterate")!
-      piplineDesc.linkedFunctions = MTLLinkedFunctions()
-      piplineDesc.linkedFunctions!.functions = [scoreFunc]
-      piplineDesc.supportIndirectCommandBuffers = true
-      let piplineState = try! MetalResource.device.makeComputePipelineState(
-        descriptor: piplineDesc, options: []
+      let pipelineDesc = MTLComputePipelineDescriptor()
+      pipelineDesc.computeFunction = MetalResource.library.makeFunction(name: "iterate")!
+      pipelineDesc.linkedFunctions = MTLLinkedFunctions()
+      pipelineDesc.linkedFunctions!.functions = [scoreFunc]
+      pipelineDesc.supportIndirectCommandBuffers = true
+      let pipelineState = try! MetalResource.device.makeComputePipelineState(
+        descriptor: pipelineDesc, options: []
       ).0
       let functionTableDesc = MTLVisibleFunctionTableDescriptor()
       functionTableDesc.functionCount = 1
-      functionTable = piplineState.makeVisibleFunctionTable(descriptor: functionTableDesc)!
-      let functionHandle = piplineState.functionHandle(function: scoreFunc)!
+      functionTable = pipelineState.makeVisibleFunctionTable(descriptor: functionTableDesc)!
+      let functionHandle = pipelineState.functionHandle(function: scoreFunc)!
       functionTable.setFunction(functionHandle, index: 0)
       let command = icb.indirectComputeCommandAt(0)
-      command.setComputePipelineState(piplineState)
+      command.setComputePipelineState(pipelineState)
       command.concurrentDispatchThreads(
         threadsPerGrid,
         threadsPerThreadgroup: MTLSize(
-          width: piplineState.maxTotalThreadsPerThreadgroup, height: 1, depth: 1))
+          width: pipelineState.maxTotalThreadsPerThreadgroup, height: 1, depth: 1))
     }
     do {
-      let piplineDesc = MTLComputePipelineDescriptor()
-      piplineDesc.computeFunction = MetalResource.library.makeFunction(name: "forward")!
-      piplineDesc.supportIndirectCommandBuffers = true
-      let piplineState = try! MetalResource.device.makeComputePipelineState(
-        descriptor: piplineDesc, options: []
+      let pipelineDesc = MTLComputePipelineDescriptor()
+      pipelineDesc.computeFunction = MetalResource.library.makeFunction(name: "forward")!
+      pipelineDesc.supportIndirectCommandBuffers = true
+      let pipelineState = try! MetalResource.device.makeComputePipelineState(
+        descriptor: pipelineDesc, options: []
       ).0
       let command = icb.indirectComputeCommandAt(1)
-      command.setComputePipelineState(piplineState)
+      command.setComputePipelineState(pipelineState)
       command.concurrentDispatchThreads(
         threadsPerGrid,
         threadsPerThreadgroup: MTLSize(
-          width: piplineState.maxTotalThreadsPerThreadgroup, height: 1, depth: 1))
+          width: pipelineState.maxTotalThreadsPerThreadgroup, height: 1, depth: 1))
     }
   }
 
@@ -96,6 +96,8 @@ public class Iterate {
     encoder.executeCommandsInBuffer(icb, range: 0..<1)
     encoder.setBuffer(start_points, offset: 0, index: 0)
     encoder.setBytes([PowTable.forward], length: MemoryLayout<group_elem>.stride, index: 1)
+    // after enable shader validation, this line will cause an error
+    // seems something about visible function table goes wrong
     encoder.executeCommandsInBuffer(icb, range: 1..<2)
     encoder.endEncoding()
     commandBuffer.commit()
