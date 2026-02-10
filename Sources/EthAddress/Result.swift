@@ -1,6 +1,6 @@
 import Headers
 
-struct Result {
+public struct Result {
   let addr: String
   let tweak: UInt64
   let score: Int32
@@ -11,5 +11,9 @@ struct Result {
       return true
     }
     return false
+  }
+
+  public func toString() -> String {
+    return String(format: "score: %2d  tweak: %9x  address: \(addr)", score, tweak)
   }
 }

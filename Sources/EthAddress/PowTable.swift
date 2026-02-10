@@ -13,6 +13,7 @@ public enum PowTable {
     )!
     return unsafeBitCast(g, to: group_elem.self)
   }()
+
   static let gn = {  // steps_per_thread * g
     let group_double_n = MetalResource.library.makeFunction(name: "group_double_n")!
     let output = MetalResource.device.makeBuffer(length: MemoryLayout<group_elem>.stride)!
@@ -31,6 +32,7 @@ public enum PowTable {
     commandBuffer.waitUntilCompleted()
     return output.contents().loadUnaligned(as: group_elem.self)
   }()
+
   static let forward = {  // threads_per_grid * gn
     let group_double_n = MetalResource.library.makeFunction(name: "group_double_n")!
     let output = MetalResource.device.makeBuffer(length: MemoryLayout<group_elem>.stride)!
@@ -49,6 +51,7 @@ public enum PowTable {
     commandBuffer.waitUntilCompleted()
     return output.contents().loadUnaligned(as: group_elem.self)
   }()
+
   @MainActor static let gpow = {  // g, 2g, ...
     let gpow = MetalResource.device.makeBuffer(
       length: MemoryLayout<group_elem>.stride * Int(steps_per_thread))!
@@ -67,6 +70,7 @@ public enum PowTable {
     commandBuffer.waitUntilCompleted()
     return gpow
   }()
+
   @MainActor static let gnpow = {  // gn, 2gn, ...
     let gnpow = MetalResource.device.makeBuffer(
       length: MemoryLayout<group_elem>.stride * Int(threads_per_grid))!

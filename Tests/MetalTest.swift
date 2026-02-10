@@ -38,7 +38,7 @@ public func compute<I1: BitwiseCopyable, I2: BitwiseCopyable, O: BitwiseCopyable
   let encoder = commandBuffer.makeComputeCommandEncoder()!
   encoder.setComputePipelineState(piplineState)
   encoder.setBytes([input1], length: MemoryLayout<I1>.stride, index: 0)
-  encoder.setBytes([input2], length: MemoryLayout<I2>.stride, index: 0)
+  encoder.setBytes([input2], length: MemoryLayout<I2>.stride, index: 1)
   encoder.setBuffer(bufferOut, offset: 0, index: 2)
   encoder.dispatchThreads(singleThread, threadsPerThreadgroup: singleThread)
   encoder.endEncoding()

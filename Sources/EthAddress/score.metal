@@ -1,13 +1,13 @@
 #include "../Headers/lib.h"
 
 address last20bytes(uint256 hash) {
-  auto p = (thread uint *)&hash;
-  p += 3;
+  auto p = (thread uchar *)&hash;
+  p += 12;
   return *(thread address *)p;
 }
 
 [[visible]]
-int zeros_bytes(address a) {
+int zero_bytes(address a) {
   int r = 0;
   for (uint i = 0; i < 20; ++i) {
     r += a.n[i] == 0;

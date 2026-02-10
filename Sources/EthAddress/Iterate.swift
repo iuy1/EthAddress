@@ -2,7 +2,7 @@ import Headers
 import Metal
 
 @MainActor
-class Iterate {
+public class Iterate {
   let start_points: MTLBuffer
   let results: MTLBuffer
   let threadsPerGrid = MTLSize(width: Int(threads_per_grid), height: 1, depth: 1)
@@ -11,7 +11,7 @@ class Iterate {
   let icb: MTLIndirectCommandBuffer
   let functionTable: MTLVisibleFunctionTable
 
-  init(score: String, start: group_elem) {
+  public init(score: String, start: group_elem) {
     do {  // initial start points
       start_points = MetalResource.device.makeBuffer(
         bytes: Array(
@@ -86,7 +86,7 @@ class Iterate {
   }
 
   // return better addresses if found
-  func compute() -> [Result] {
+  public func compute() -> [Result] {
     let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
     let encoder = commandBuffer.makeComputeCommandEncoder()!
     encoder.setBuffer(PowTable.gpow, offset: 0, index: 0)

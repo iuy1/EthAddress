@@ -6,7 +6,9 @@ import PackageDescription
 let package = Package(
   name: "EthAddress",
   platforms: [.macOS(.v13)],
-
+  products: [
+    .executable(name: "Cli", targets: ["Cli"])
+  ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.2.0"),
     .package(url: "https://github.com/schwa/MetalCompilerPlugin", branch: "main"),
@@ -28,7 +30,10 @@ let package = Package(
     ),
     .executableTarget(
       name: "Cli",
-      dependencies: ["EthAddress"]
+      dependencies: [
+        "EthAddress",
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
+      ]
     ),
     .testTarget(
       name: "Tests",

@@ -18,21 +18,21 @@ struct Search {
   @MainActor
   func singleThreadTest() {
     let iterate = MetalResource.library.makeFunction(name: "iterate")!
-    let zeros_bytes = MetalResource.library.makeFunction(name: "zeros_bytes")!
+    let zero_bytes = MetalResource.library.makeFunction(name: "zero_bytes")!
     let res = MetalResource.device.makeBuffer(
       bytes: [result(addr: address(), tweak: 0, score: -1)], length: MemoryLayout<result>.stride)!
     do {
       let descriptor = MTLComputePipelineDescriptor()
       descriptor.computeFunction = iterate
       descriptor.linkedFunctions = MTLLinkedFunctions()
-      descriptor.linkedFunctions!.functions = [zeros_bytes]
+      descriptor.linkedFunctions!.functions = [zero_bytes]
       let piplineState = try! MetalResource.device.makeComputePipelineState(
         descriptor: descriptor, options: []
       ).0
       let functionTableDesc = MTLVisibleFunctionTableDescriptor()
       functionTableDesc.functionCount = 1
       let functionTable = piplineState.makeVisibleFunctionTable(descriptor: functionTableDesc)!
-      let functionHandle = piplineState.functionHandle(function: zeros_bytes)!
+      let functionHandle = piplineState.functionHandle(function: zero_bytes)!
       functionTable.setFunction(functionHandle, index: 0)
       let commandBuffer = MetalResource.commandQueue.makeCommandBuffer()!
       let encoder = commandBuffer.makeComputeCommandEncoder()!
@@ -55,7 +55,7 @@ struct Search {
   @Test
   @MainActor
   func iterate() {
-    let it = Iterate(score: "zeros_bytes", start: start)
+    let it = Iterate(score: "zero_bytes", start: start)
     let output = it.compute()
     let r = output.last!
     #expect(r.addr == "a29d2a009f8ded00bc27ea0d42274d48f1fc2d00")
@@ -65,7 +65,7 @@ struct Search {
   @Test
   @MainActor
   func multi_iterate() {
-    let it = Iterate(score: "zeros_bytes", start: start)
+    let it = Iterate(score: "zero_bytes", start: start)
     let r = (0..<10).map { _ in it.compute() }.last!.last!
     #expect(r.addr == "0000fb844e6310c6a24398821703fe00734df500")
     #expect(r.score == 4)
