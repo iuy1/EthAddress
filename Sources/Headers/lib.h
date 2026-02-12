@@ -1,3 +1,6 @@
+#ifndef LIB
+#define LIB
+
 #ifdef __METAL_VERSION__
 #else
 #include <stdint.h>
@@ -58,5 +61,8 @@ typedef struct {
   uint64_t tweak;
 } tweak_point;
 
-#define steps_per_thread (1 << 10)
+#define inv_batch_size (1 << 4)
+#define steps_per_thread (1 << 12)
 #define threads_per_grid (1 << 12)
+
+#endif

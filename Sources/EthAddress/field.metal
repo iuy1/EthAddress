@@ -1,6 +1,22 @@
 #include "../Headers/lib.h"
 #include <metal_stdlib>
 
+// llvm can't optimize these functions in metal_stdlib
+template <class T> T max(T a, T b) {
+  if (a > b) {
+    return a;
+  } else {
+    return b;
+  }
+}
+template <class T> T min(T a, T b) {
+  if (a < b) {
+    return a;
+  } else {
+    return b;
+  }
+}
+
 template <uint aLen, uint aBits, uint bLen, uint bBits>
 void transform(thread const uint a[], thread uint b[]) {
   for (uint i = 0; i < bLen; ++i) {
@@ -13,8 +29,8 @@ void transform(thread const uint a[], thread uint b[]) {
       uint aEnd = aStart + aBits;
       uint bStart = j * bBits;
       uint bEnd = bStart + bBits;
-      uint overlapStart = metal::max(aStart, bStart);
-      uint overlapEnd = metal::min(aEnd, bEnd);
+      uint overlapStart = max(aStart, bStart);
+      uint overlapEnd = min(aEnd, bEnd);
       if (overlapStart < overlapEnd) {
         uint overlapBits = overlapEnd - overlapStart;
         uint e = metal::extract_bits(a[i], overlapStart - aStart, overlapBits);
@@ -42,9 +58,9 @@ kernel void unsigned10x26_to_uint256(device const unsigned10x26 *in
 }
 
 // 2**256 - 2**32 - 977
-constant uint256 mod_uint256 =                             //
-    {.n = {0xfffffc2f, 0xfffffffe, 0xffffffff, 0xffffffff, //
-           0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff}};
+// constant uint256 mod_uint256 =                             //
+//     {.n = {0xfffffc2f, 0xfffffffe, 0xffffffff, 0xffffffff, //
+//            0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff}};
 
 void add_carry(thread uint &r, thread uint &cout, uint a, uint b, uint cin) {
   // cin <= 1
@@ -148,9 +164,15 @@ uint256 mod_mul_u8(uint8_t a, uint256 b) {
 
 uint256 mod_mul(uint256 a, uint256 b) {
   uint r[16]{};
-  for (uint i = 0; i <= 14; ++i) {
-    for (uint i1 = metal::max(7u, i) - 7; i1 <= metal::min(i, 7u); ++i1) {
-      uint i2 = i - i1;
+  for (int i = 0; i <= 14; ++i) {
+    for (int i1 = 0; i1 < 8; ++i1) {
+      if (i1 > i) {
+        continue;
+      }
+      int i2 = i - i1;
+      if (i2 < 0 || i2 > 7) {
+        continue;
+      }
       ulong ri = ulong(a.n[i1]) * b.n[i2] + r[i];
       r[i] = uint(ri);
       ri = r[i + 1] + (ri >> 32);
@@ -163,10 +185,10 @@ uint256 mod_mul(uint256 a, uint256 b) {
     }
   }
   ulong c = 0; // carray from last limb, < 2**33
-  for (uint i = 8; i < 16; ++i) {
-    ulong t = ulong(r[i]) * 0x3d1 + r[i - 8] + c;
-    r[i - 8] = uint(t);
-    c = (t >> 32) + r[i];
+  for (uint i = 0; i < 8; ++i) {
+    ulong t = ulong(r[i + 8]) * 0x3d1 + r[i] + c;
+    r[i] = uint(t);
+    c = (t >> 32) + r[i + 8];
   }
   {
     ulong t = c * 0x3d1 + r[0];

@@ -41,7 +41,9 @@ score:  6  tweak:   279ae07  address: 000000b54cfd45f3f2966ba0e73fd9158118663b
 
 ## benchmark
 
-## todo
+在 Apple M3 芯片上的速度约为 16 M/s （约为 [profanity2](https://github.com/1inch/profanity2) 的 1/5 ）
+
+速度的差异主要是因为循环没有展开（Metal 没有循环展开指令），其次是因为计算椭圆曲线时数学优化不足
 
 ## 参考资料
 
@@ -51,4 +53,3 @@ score:  6  tweak:   279ae07  address: 000000b54cfd45f3f2966ba0e73fd9158118663b
 - <https://github.com/ethereumbook/ethereumbook>
 - <https://github.com/mikecvet/sha-3>
 - <https://emn178.github.io/online-tools/keccak_256.html>
--

@@ -55,6 +55,7 @@ public enum PowTable {
   @MainActor static let gpow = {  // g, 2g, ...
     let gpow = MetalResource.device.makeBuffer(
       length: MemoryLayout<group_elem>.stride * Int(steps_per_thread))!
+    gpow.label = "gpow"
     gpow.contents().bindMemory(to: group_elem.self, capacity: 1).pointee = g
     let fill_pow = MetalResource.library.makeFunction(name: "fill_pow")!
     let pipelineState = try! MetalResource.device.makeComputePipelineState(
@@ -74,6 +75,7 @@ public enum PowTable {
   @MainActor static let gnpow = {  // gn, 2gn, ...
     let gnpow = MetalResource.device.makeBuffer(
       length: MemoryLayout<group_elem>.stride * Int(threads_per_grid))!
+    gnpow.label = "gnpow"
     gnpow.contents().bindMemory(to: group_elem.self, capacity: 1).pointee = gn
     let fill_pow = MetalResource.library.makeFunction(name: "fill_pow")!
     let pipelineState = try! MetalResource.device.makeComputePipelineState(

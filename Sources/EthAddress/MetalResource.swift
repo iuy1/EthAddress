@@ -6,8 +6,9 @@ public enum MetalResource {
   static let commandQueue = device.makeCommandQueue()!
   static let library = {
     let l = try! device.makeLibrary(
-      URL: Bundle.module.url(forResource: "debug", withExtension: "metallib")!)
-    print(l.functionNames)
+      URL: Bundle.module.url(forResource: "debug", withExtension: "metallib")!
+    )
+    // print(l.functionNames)
     return l
   }()
 }
